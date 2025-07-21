@@ -15,6 +15,27 @@ from flask_cors import CORS
 from pymongo import MongoClient
 from datetime import datetime
 
+# Configure Tesseract path
+from flask import Flask, request, jsonify, render_template
+import os
+import uuid
+import re
+from PIL import Image
+from pdf2image import convert_from_path
+import cv2
+import numpy as np
+import pytesseract
+from rapidfuzz import fuzz, process as rapid_process
+import base64
+import json
+from hashlib import sha256
+from flask_cors import CORS
+from pymongo import MongoClient
+from datetime import datetime
+
+# Configure Tesseract path
+pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+
 # API_KEYS_FILE = 'api_keys.json'
 
 # def load_api_keys():
@@ -72,16 +93,16 @@ DOCUMENT_FIELDS = {
 }
 
 DOC_MODEL_PATHS = {
-    "Aadhar Card": "models/aadhaar.pt",
-    "PAN Card": "models/pan_best.pt",
-    "Handicap smart card": "models/handicap_smart_card.pt",
-    "Birth Certificate": "models/Birth_certificatebest.pt",
+    "Aadhar Card": os.path.join("models", "aadhaar.pt"),
+    "PAN Card": os.path.join("models", "pan_best.pt"),
+    "Handicap smart card": os.path.join("models", "handicap_smart_card.pt"),
+    "Birth Certificate": os.path.join("models", "Birth_certificatebest.pt"),
     "Bonafide Certificate": None,
-    "Caste certificate": "models/caste_certificate.pt",
-    "Current Month Salary Slip": "models/salaryslipbest.pt",
-    "Passport and VISA": "models/passport.pt",
+    "Caste certificate": os.path.join("models", "caste_certificate.pt"),
+    "Current Month Salary Slip": os.path.join("models", "salaryslipbest.pt"),
+    "Passport and VISA": os.path.join("models", "passport.pt"),
     "Marksheet": None,
-    "Transgender Certificate": "models/trans_best.pt"
+    "Transgender Certificate": os.path.join("models", "trans_best.pt")
 }
 
 def extract_bonafide_fields(image):
@@ -166,27 +187,53 @@ def process_with_regex(image, document_type):
 
 
 def classify_document(image_path):
-    image = Image.open(image_path)
-    text = pytesseract.image_to_string(image, lang='eng')
-    text = text.lower()
-    scores = {}
-    for doc_type, keywords in document_keywords.items():
-        score = sum(1 for kw in keywords if re.search(r"\b" + re.escape(kw.lower()) + r"\b", text))
-        scores[doc_type] = score
-    best_match = max(scores, key=scores.get)
-    best_score = scores[best_match]
-    if best_score > 0:
-        return best_match, best_score
-    else:
+    try:
+        if not os.path.exists(image_path):
+            print(f"Error in classify_document: File not found: {image_path}")
+            return "Unknown Document", 0
+            
+        image = Image.open(image_path)
+        try:
+            text = pytesseract.image_to_string(image, lang='eng')
+            text = text.lower()
+        except Exception as ocr_error:
+            print(f"OCR Error in classify_document: {ocr_error}")
+            # Fall back to empty text if OCR fails
+            text = ""
+            
+        scores = {}
+        for doc_type, keywords in document_keywords.items():
+            score = sum(1 for kw in keywords if re.search(r"\b" + re.escape(kw.lower()) + r"\b", text))
+            scores[doc_type] = score
+            
+        if not scores:
+            return "Unknown Document", 0
+            
+        best_match = max(scores, key=scores.get)
+        best_score = scores[best_match]
+        if best_score > 0:
+            return best_match, best_score
+        else:
+            return "Unknown Document", 0
+    except PermissionError as pe:
+        print(f"Permission Error in classify_document: {pe} - Check if the file is accessible")
+        return "Unknown Document", 0
+    except Exception as e:
+        print(f"Error in classify_document: {str(e)}, Type: {type(e).__name__}")
         return "Unknown Document", 0
 
 def load_image(file_path):
-    ext = file_path.split('.')[-1].lower()
-    if ext == 'pdf':
-        images = convert_from_path(file_path)
-        return cv2.cvtColor(np.array(images[0]), cv2.COLOR_RGB2BGR)
-    else:
-        return cv2.cvtColor(np.array(Image.open(file_path).convert("RGB")), cv2.COLOR_RGB2BGR)
+    try:
+        ext = file_path.split('.')[-1].lower()
+        if ext == 'pdf':
+            images = convert_from_path(file_path)
+            return cv2.cvtColor(np.array(images[0]), cv2.COLOR_RGB2BGR)
+        else:
+            return cv2.cvtColor(np.array(Image.open(file_path).convert("RGB")), cv2.COLOR_RGB2BGR)
+    except Exception as e:
+        print(f"Error in load_image: {e}")
+        # Return a blank image as fallback
+        return np.zeros((100, 100, 3), dtype=np.uint8)
 
 # def extract_name_from_text(text):
 #     # Simple regex for name extraction, can be improved per document type
@@ -308,21 +355,25 @@ def image_to_base64(image):
     return img_str
 
 def run_yolo_ocr(image, model_path):
-    from ultralytics import YOLO
-    model = YOLO(model_path)
-    results = model(image)[0]
-    fields = {}
-    image_drawn = image.copy()
-    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    for i, box in enumerate(results.boxes):
-        x1, y1, x2, y2 = map(int, box.xyxy[0])
-        cls_id = int(box.cls[0])
-        class_name = results.names[cls_id]
-        text = pytesseract.image_to_string(Image.fromarray(image_rgb[y1:y2, x1:x2]), config='--psm 6').strip()
-        fields[class_name] = text if text else "not_verified"
-        cv2.rectangle(image_drawn, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        cv2.putText(image_drawn, class_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
-    return fields, image_drawn
+    try:
+        from ultralytics import YOLO
+        model = YOLO(model_path)
+        results = model(image)[0]
+        fields = {}
+        image_drawn = image.copy()
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        for i, box in enumerate(results.boxes):
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            cls_id = int(box.cls[0])
+            class_name = results.names[cls_id]
+            text = pytesseract.image_to_string(Image.fromarray(image_rgb[y1:y2, x1:x2]), config='--psm 6').strip()
+            fields[class_name] = text if text else "not_verified"
+            cv2.rectangle(image_drawn, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(image_drawn, class_name, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+        return fields, image_drawn
+    except Exception as e:
+        print(f"Error in run_yolo_ocr: {e}")
+        return {}, image
 
 @app.route('/document_fields/<doc_type>')
 def get_document_fields(doc_type):
@@ -334,6 +385,10 @@ def get_document_fields(doc_type):
 @app.route('/')
 def index():
     return render_template('index.html', doc_types=list(document_keywords.keys()))
+
+@app.route('/enterprise')
+def enterprise():
+    return render_template('enterprise.html', doc_types=list(document_keywords.keys()))
 
 @app.route('/classify_document', methods=['POST'])
 def classify_document_api():
@@ -354,39 +409,89 @@ def classify_document_api():
 @app.route('/process_documents', methods=['POST'])
 def process_documents_api():
     try:
+        print("[INFO] Process documents request received")
         # Determine where request is coming from (Referer or Origin)
         referer = request.headers.get("Referer", "") or request.headers.get("Origin", "")
+        print(f"[DEBUG] Request referer: {referer}")
         require_api_key = "enterprise" in referer.lower()
 
         # If enterprise.html is being used, enforce API Key validation
         if require_api_key:
             api_key = request.headers.get("X-API-Key")
             if not api_key:
+                print("[ERROR] Missing API key")
                 return jsonify({'error': 'Missing API key'}), 403
             key_entry = api_keys_collection.find_one({"key": api_key})
             if not key_entry:
+                print("[ERROR] Invalid API key")
                 return jsonify({'error': 'Invalid API key'}), 403
+            print("[INFO] Valid API key provided")
         else:
             print("[PUBLIC DEMO] Request from index.html or external client. No API key required.")
 
         # Process uploaded documents
+        if 'files' not in request.files:
+            print("[ERROR] No files in request")
+            return jsonify({'error': 'No files uploaded'}), 400
+            
         files = request.files.getlist('files')
+        if not files:
+            print("[ERROR] Empty files list")
+            return jsonify({'error': 'No files uploaded'}), 400
+            
+        print(f"[INFO] Processing {len(files)} files")
         user_name = request.form.get('user_name', '').strip()
         confirmed_types = request.form.getlist('confirmed_types')
         results = []
 
         for idx, file in enumerate(files):
-            file_id = str(uuid.uuid4())
-            file_extension = file.filename.split('.')[-1].lower()
-            file_path = os.path.join(UPLOAD_FOLDER, f"{file_id}.{file_extension}")
-            file.save(file_path)
+            file_path = None
+            try:
+                print(f"[INFO] Processing file {idx+1}/{len(files)}: {file.filename}")
+                
+                file_id = str(uuid.uuid4())
+                file_extension = file.filename.split('.')[-1].lower()
+                file_path = os.path.join(UPLOAD_FOLDER, f"{file_id}.{file_extension}")
+                
+                # Ensure the uploads directory exists
+                os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+                
+                # Save the file
+                file.save(file_path)
+                print(f"[DEBUG] File saved to: {file_path}")
+                
+                # Determine document type
+                if idx < len(confirmed_types) and confirmed_types[idx]:
+                    doc_type = confirmed_types[idx]
+                    confidence = None
+                    print(f"[DEBUG] Using confirmed type: {doc_type}")
+                else:
+                    print("[DEBUG] Classifying document...")
+                    doc_type, confidence = classify_document(file_path)
+                    print(f"[DEBUG] Classified as: {doc_type} with confidence: {confidence}")
 
-            doc_type = confirmed_types[idx] if idx < len(confirmed_types) and confirmed_types[idx] else None
-            confidence = None if doc_type else classify_document(file_path)[1]
-            doc_type = doc_type or classify_document(file_path)[0]
-
-            doc_info = process_document(file_path, doc_type)
-            extracted_fields = doc_info.get("fields", {})
+                # Process the document
+                print(f"[DEBUG] Processing document of type: {doc_type}")
+                doc_info = process_document(file_path, doc_type)
+                extracted_fields = doc_info.get("fields", {})
+            except Exception as e:
+                print(f"[ERROR] Failed to process file {file.filename}: {str(e)}")
+                # Add error result
+                results.append({
+                    "filename": file.filename,
+                    "error": str(e),
+                    "doc_type": "Error",
+                    "raw_text": f"Error processing file: {str(e)}",
+                    "fields": {},
+                    "annotated_image": None
+                })
+                # Skip to next file
+                if file_path and os.path.exists(file_path):
+                    try:
+                        os.remove(file_path)
+                    except:
+                        pass
+                continue
             # For backward compatibility, also include extracted_name
             extracted_name = doc_info.get("extracted_name", "")
 

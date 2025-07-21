@@ -1,510 +1,1034 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Enterprise Document Verifier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    :root {
-      --primary: #232946;
-      --secondary: #eebbc3;
-      --accent: #b8c1ec;
-      --bg: #121629;
-      --card-bg: rgba(35, 41, 70, 0.92);
-      --glass: rgba(35, 41, 70, 0.75);
-      --success: #43d9ad;
-      --error: #f43f5e;
-      --text: #f4f4f4;
-      --text-secondary: #b8c1ec;
-      --border: #393e6e;
-      --shadow: 0 4px 32px 0 #23294644;
-    }
-    body {
-      background: linear-gradient(135deg, #121629 0%, #232946 100%);
-      color: var(--text);
-      font-family: 'Segoe UI', 'Inter', Arial, sans-serif;
-      margin: 0;
-      min-height: 100vh;
-      padding: 0;
-      letter-spacing: -0.01em;
-    }
-    .enterprise-container {
-      max-width: 900px;
-      margin: 48px auto 0 auto;
-      background: var(--glass);
-      border-radius: 22px;
-      box-shadow: var(--shadow);
-      padding: 38px 32px 32px 32px;
-      border: 1.5px solid var(--border);
-      backdrop-filter: blur(8px);
-    }
-    h2 {
-      color: var(--secondary);
-      font-size: 2.2em;
-      margin-bottom: 8px;
-      letter-spacing: -0.02em;
-    }
-    .subtitle {
-      color: var(--accent);
-      font-size: 1.1em;
-      margin-bottom: 28px;
-    }
-    label {
-      font-weight: 500;
-      color: var(--text-secondary);
-      margin-top: 18px;
-      display: block;
-      margin-bottom: 6px;
-    }
-    input[type="text"], input[type="password"], select {
-      width: 100%;
-      padding: 13px;
-      border-radius: 10px;
-      border: 1.5px solid var(--border);
-      background: #181e29;
-      color: var(--text);
-      font-size: 1.08em;
-      margin-bottom: 18px;
-      transition: border 0.2s, box-shadow 0.2s;
-      box-shadow: 0 2px 8px #23294622;
-    }
-    input[type="text"]:focus, select:focus {
-      border: 1.5px solid var(--secondary);
-      outline: none;
-      box-shadow: 0 0 0 2px #eebbc344;
-    }
-    .file-drop {
-      border: 2.5px dashed var(--accent);
-      border-radius: 14px;
-      padding: 38px 18px;
-      text-align: center;
-      background: #181e29cc;
-      cursor: pointer;
-      margin-bottom: 18px;
-      color: var(--text-secondary);
-      font-size: 1.13em;
-      transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-      position: relative;
-      box-shadow: 0 2px 12px #23294622;
-    }
-    .file-drop.active {
-      background: #232946cc;
-      border-color: var(--secondary);
-      box-shadow: 0 0 0 2px #eebbc344;
-    }
-    .file-list {
-      margin-bottom: 18px;
-    }
-    .file-card {
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 18px 18px 12px 18px;
-      margin-bottom: 14px;
-      border: 1.5px solid var(--border);
-      box-shadow: 0 2px 12px #23294622;
-      display: flex;
-      align-items: flex-start;
-      gap: 18px;
-    }
-    .file-card-icon {
-      width: 38px;
-      height: 38px;
-      border-radius: 8px;
-      background: linear-gradient(135deg, #eebbc3 0%, #b8c1ec 100%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #232946;
-      font-size: 1.5em;
-      flex-shrink: 0;
-      box-shadow: 0 2px 8px #eebbc344;
-    }
-    .file-card-content {
-      flex: 1;
-    }
-    .dynamic-fields-section {
-      background: #181e29cc;
-      border-radius: 12px;
-      padding: 18px 18px 8px 18px;
-      margin-bottom: 18px;
-      border: 1.5px solid var(--border);
-      box-shadow: 0 2px 8px #23294622;
-    }
-    .submit-btn {
-      margin-top: 18px;
-      padding: 15px 38px;
-      border-radius: 10px;
-      border: none;
-      background: linear-gradient(90deg, #eebbc3 0%, #b8c1ec 100%);
-      color: #232946;
-      font-weight: 700;
-      cursor: pointer;
-      font-size: 1.13em;
-      box-shadow: 0 2px 16px #eebbc344;
-      letter-spacing: 0.5px;
-      transition: background 0.18s, transform 0.12s, box-shadow 0.18s;
-    }
-    .submit-btn:disabled {
-      background: #393e6e;
-      color: #b8c1ec;
-      cursor: not-allowed;
-      box-shadow: none;
-    }
-    .result-section {
-      margin-top: 32px;
-    }
-    .result-card {
-      background: var(--card-bg);
-      border-radius: 14px;
-      padding: 18px 18px 12px 18px;
-      margin-bottom: 18px;
-      border: 1.5px solid var(--border);
-      box-shadow: 0 2px 12px #23294622;
-      display: flex;
-      align-items: flex-start;
-      gap: 18px;
-    }
-    .result-card-content {
-      flex: 1;
-    }
-    .pass {
-      color: var(--success);
-      font-size: 1.3em;
-      font-weight: bold;
-      margin-left: 8px;
-    }
-    .fail {
-      color: var(--error);
-      font-size: 1.3em;
-      font-weight: bold;
-      margin-left: 8px;
-    }
-    .score-bar {
-      display: inline-block;
-      height: 10px;
-      border-radius: 6px;
-      background: linear-gradient(90deg, #43d9ad 0%, #b8c1ec 100%);
-      margin-left: 8px;
-      vertical-align: middle;
-      min-width: 40px;
-      max-width: 120px;
-    }
-    .score-label {
-      font-size: 0.98em;
-      color: var(--text-secondary);
-      margin-left: 8px;
-    }
-    .loader {
-      display: inline-block;
-      width: 22px;
-      height: 22px;
-      border: 3px solid var(--accent);
-      border-top: 3px solid #fff;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      vertical-align: middle;
-    }
-    @keyframes spin {
-      0% { transform: rotate(0deg);}
-      100% { transform: rotate(360deg);}
-    }
-    @media (max-width: 700px) {
-      .enterprise-container { padding: 12px 2vw 12px 2vw; }
-      h2 { font-size: 1.3em; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Enterprise Document Verifier</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #00527C;
+            --secondary: #B5271E;
+            --accent: #2196F3;
+            --bg: #f8f9fa;
+            --card-bg: #ffffff;
+            --glass: rgba(255, 255, 255, 0.95);
+            --success: #28a745;
+            --error: #dc3545;
+            --text: #212529;
+            --text-secondary: #495057;
+            --border: #dee2e6;
+            --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+            --header-bg: #942337;
+            --footer-bg: #00527C;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            padding: 0;
+            line-height: 1.5;
+        }
+        /* PMC-style header */
+        .top-bar {
+            background-color: #F5F5F5;
+            padding: 0;
+            width: 100%;
+        }
+        .social-bar {
+            background-color: #F5F5F5;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .social-icons-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+        .social-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--header-bg);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 8px;
+            color: white;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .toll-free {
+            background-color: var(--header-bg);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-left: 20px;
+            font-weight: 500;
+        }
+        .right-services {
+            background-color: var(--header-bg);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-left: 10px;
+            font-weight: 500;
+        }
+        .login-button {
+            background-color: var(--header-bg);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-left: auto;
+            font-weight: 500;
+            text-decoration: none;
+        }
+        .pmc-header {
+            background-color: white;
+            color: var(--text);
+            padding: 15px 0;
+            width: 100%;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .pmc-header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            padding: 0 15px;
+        }
+        .pmc-logo {
+            display: flex;
+            align-items: center;
+        }
+        .pmc-logo img {
+            height: 60px;
+            margin-right: 15px;
+        }
+        .pmc-title {
+            display: flex;
+            flex-direction: column;
+        }
+        .pmc-title h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .pmc-title p {
+            font-size: 0.9rem;
+            margin: 5px 0 0 0;
+            color: var(--text-secondary);
+        }
+        .nav-menu {
+            margin-left: auto;
+            display: flex;
+        }
+        .nav-link {
+            color: var(--primary);
+            text-decoration: none;
+            padding: 10px 20px;
+            font-weight: 500;
+            position: relative;
+        }
+        .nav-link.active {
+            color: var(--secondary);
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 20px;
+            right: 20px;
+            height: 3px;
+            background-color: var(--secondary);
+        }
+        
+        .breadcrumb {
+            background-color: #f1f3f5;
+            padding: 10px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .breadcrumb-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        
+        .breadcrumb .separator {
+            margin: 0 8px;
+            color: #adb5bd;
+        }
+        
+        .breadcrumb .current {
+            color: var(--text-secondary);
+        }
+        
+        /* Main container */
+        .enterprise-container {
+            max-width: 1000px;
+            margin: 30px auto 50px auto;
+            background: var(--glass);
+            border-radius: 8px;
+            box-shadow: var(--shadow);
+            padding: 25px;
+            border: 1px solid var(--border);
+        }
+        
+        .service-categories {
+            display: flex;
+            margin-bottom: 25px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .category-tab {
+            padding: 12px 25px;
+            font-weight: 500;
+            color: var(--text);
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .category-tab.active {
+            color: var(--primary);
+        }
+        
+        .category-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--secondary);
+        }
+        
+        .service-links {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .service-link {
+            text-decoration: none;
+            color: var(--text);
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            transition: all 0.2s;
+        }
+        
+        .service-link:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .service-link-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            font-weight: 500;
+        }
+        
+        .arrow-icon {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        @media (max-width: 600px) {
+            .service-links {
+                grid-template-columns: 1fr;
+            }
+        }
+        h2 {
+            color: var(--primary);
+            font-size: 1.8em;
+            margin-bottom: 8px;
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 10px;
+        }
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 25px;
+        }
+        label {
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-top: 18px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            background: #fff;
+            color: var(--text);
+            font-size: 1em;
+            margin-bottom: 18px;
+            transition: border 0.2s, box-shadow 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input[type="text"]:focus, select:focus {
+            border: 1px solid var(--accent);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(44, 127, 184, 0.25);
+        }
+        .file-drop {
+            border: 2px dashed var(--accent);
+            border-radius: 6px;
+            padding: 30px;
+            text-align: center;
+            background: rgba(44, 127, 184, 0.05);
+            cursor: pointer;
+            margin-bottom: 20px;
+            color: var(--text-secondary);
+            font-size: 1em;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            position: relative;
+        }
+        .file-drop.active {
+            background: rgba(44, 127, 184, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(44, 127, 184, 0.25);
+        }
+        .file-list {
+            margin-bottom: 20px;
+        }
+        .file-card {
+            background: var(--card-bg);
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .file-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 4px;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2em;
+            flex-shrink: 0;
+        }
+        .file-card-content {
+            flex: 1;
+        }
+        .file-card-content h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: var(--primary);
+        }
+        .dynamic-fields-section {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .dynamic-fields-section h4 {
+            color: var(--primary);
+            margin-top: 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        button {
+            padding: 8px 15px;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--accent);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            margin-right: 5px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: var(--primary);
+        }
+        .submit-btn {
+            margin-top: 20px;
+            padding: 12px 25px;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--primary);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s;
+            display: inline-block;
+        }
+        .submit-btn:hover {
+            background-color: #0b3c69;
+        }
+        .submit-btn:disabled {
+            background-color: #6c757d;
+            color: #f8f9fa;
+            cursor: not-allowed;
+        }
+        .result-section {
+            margin-top: 32px;
+        }
+        .result-card {
+            background: var(--card-bg);
+            border-radius: 14px;
+            padding: 18px 18px 12px 18px;
+            margin-bottom: 18px;
+            border: 1.5px solid var(--border);
+            box-shadow: 0 2px 12px #23294622;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
+        }
+        .result-card-content {
+            flex: 1;
+        }
+        .pass {
+            color: #28a745;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .fail {
+            color: #dc3545;
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-left: 8px;
+        }
+        .score-bar {
+            display: inline-block;
+            height: 10px;
+            border-radius: 4px;
+            background: var(--accent) !important;
+            margin-left: 8px;
+            vertical-align: middle;
+            min-width: 40px;
+            max-width: 120px;
+        }
+        .score-label {
+            font-size: 0.9em;
+            color: var(--primary);
+            margin-left: 8px;
+            font-weight: 500;
+        }
+        #errorAlert {
+            background-color: #f8d7da;
+            color: #721c24;
+            padding: 12px 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid #f5c6cb;
+        }
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0, 113, 188, 0.2);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg);}
+            100% { transform: rotate(360deg);}
+        }
+        .result-details {
+            margin-top: 15px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 0;
+        }
+        .result-details summary {
+            padding: 8px 15px;
+            background-color: #f1f3f5;
+            cursor: pointer;
+            font-weight: 500;
+            color: var(--primary);
+        }
+        .result-pre {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-top: 1px solid var(--border);
+            margin: 0;
+            max-height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        /* PMC Footer Styles */
+        .pmc-footer {
+            background-color: var(--footer-bg);
+            color: white;
+            padding: 40px 0 0;
+            margin-top: 50px;
+        }
+        
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 0 20px;
+        }
+        
+        .footer-section {
+            width: 30%;
+            margin-bottom: 30px;
+        }
+        
+        .footer-section h4 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: white;
+            font-weight: 500;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            padding-bottom: 10px;
+        }
+        
+        .footer-section ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .footer-section ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-section a {
+            color: #fff;
+            text-decoration: none;
+        }
+        
+        .footer-section a:hover {
+            text-decoration: underline;
+        }
+        
+        .footer-section p {
+            margin: 5px 0;
+            color: rgba(255,255,255,0.8);
+        }
+        
+        .footer-social-icons {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .footer-social-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            background-color: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: bold;
+            transition: background-color 0.2s;
+        }
+        
+        .footer-social-icon:hover {
+            background-color: rgba(255,255,255,0.3);
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 20px;
+            background-color: rgba(0,0,0,0.2);
+            font-size: 14px;
+        }
+        
+        @media (max-width: 700px) {
+            .enterprise-container { padding: 12px 2vw 12px 2vw; }
+            h2 { font-size: 1.3em; }
+            .footer-section { width: 100%; }
+        }
+    </style>
 </head>
 <body>
-  <div class="enterprise-container">
-    <h2>Enterprise Document Verification</h2>
-    <div class="subtitle">AI-powered, secure, and customizable verification for your business needs.</div>
-    <label for="apiKeyInput">API Key</label>
-    <input id="apiKeyInput" type="text" placeholder="Paste your API key here">
-    <label for="applicantName">Applicant Name</label>
-    <input id="applicantName" type="text" placeholder="e.g. Ravi Kumar">
-    <div id="fileDrop" class="file-drop" tabindex="0">
-      <b>Drag & drop documents here or click to select files</b>
-      <input type="file" id="docs" multiple style="display:none;">
+    <div class="top-bar">
+        <div class="social-bar">
+            <div class="social-icons-container">
+                <a href="#" class="social-icon">f</a>
+                <a href="#" class="social-icon">in</a>
+                <a href="#" class="social-icon">X</a>
+                <a href="#" class="social-icon">YT</a>
+                <a href="#" class="social-icon">W</a>
+                <span class="toll-free">Toll Free: 18001030222</span>
+                <span class="right-services">Right To Services</span>
+                <a href="#" class="login-button">Department Login</a>
+            </div>
+        </div>
+        <header class="pmc-header">
+            <div class="pmc-header-container">
+                <div class="pmc-logo">
+                    <img src="https://www.pmc.gov.in/sites/default/files/pmc_portal/pmc-logo.png" alt="PMC Logo" onerror="this.src='data:image/svg+xml;charset=UTF-8,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'60\' height=\'60\' viewBox=\'0 0 60 60\'><rect width=\'60\' height=\'60\' fill=\'%23002855\'/><text x=\'30\' y=\'35\' font-family=\'Arial\' font-size=\'18\' text-anchor=\'middle\' fill=\'white\'>PMC</text></svg>'">
+                    <div class="pmc-title">
+                        <h1>Document Verification Portal</h1>
+                        <p>Pune Municipal Corporation</p>
+                    </div>
+                </div>
+                <nav class="nav-menu">
+                    <a href="#" class="nav-link active">Home</a>
+                    <a href="#" class="nav-link">Services</a>
+                    <a href="#" class="nav-link">About</a>
+                    <a href="#" class="nav-link">Contact Us</a>
+                </nav>
+            </div>
+        </header>
     </div>
-    <div class="file-list" id="fileList"></div>
-    <div id="dynamicFields"></div>
-    <button class="submit-btn" id="submitBtn" disabled>Submit for Verification</button>
-    <div id="status"></div>
-    <div class="result-section" id="resultSection"></div>
-  </div>
-  <script>
-    const LAN_SERVER = "http://192.168.0.29:5000"; // replace if different
-    let files = [];
-    let fileStates = [];
-    let requiredFieldsMap = {}; // { idx: [fields] }
+    
+    <div class="breadcrumb">
+        <div class="breadcrumb-container">
+            <a href="#">Home</a> <span class="separator">/</span> <a href="#">Services</a> <span class="separator">/</span> <span class="current">Document Verification</span>
+        </div>
+    </div>
+    
+    <div class="enterprise-container">
+        <div class="service-categories">
+            <div class="category-tab active">Document Verification</div>
+            <div class="category-tab">Online Services</div>
+            <div class="category-tab">Disaster Management</div>
+        </div>
+        
+        <h2>Enterprise Document Verification</h2>
+        <div class="subtitle">AI-powered, secure, and customizable verification for your business needs.</div>
+        
+        <div class="service-links">
+            <a href="#" class="service-link">
+                <div class="service-link-inner">
+                    <span>Document Guidelines</span>
+                    <span class="arrow-icon">→</span>
+                </div>
+            </a>
+            <a href="#" class="service-link">
+                <div class="service-link-inner">
+                    <span>Verification Status</span>
+                    <span class="arrow-icon">→</span>
+                </div>
+            </a>
+        </div>
+        
+        <label for="apiKeyInput">API Key</label>
+        <input id="apiKeyInput" type="text" placeholder="Paste your API key here">
+        <div id="errorAlert"></div>
+        
+        <label for="applicantName">Applicant Name</label>
+        <input id="applicantName" type="text" placeholder="e.g. Ravi Kumar">
+        
+        <div id="fileDrop" class="file-drop" tabindex="0">
+            <b>Drag & drop documents here or click to select files</b>
+            <input type="file" id="docs" multiple style="display:none;">
+        </div>
+        
+        <div class="file-list" id="fileList"></div>
+        <div id="dynamicFields"></div>
+        <button class="submit-btn" id="submitBtn" disabled>Submit for Verification</button>
+        <div id="status"></div>
+        <div class="result-section" id="resultSection"></div>
+    </div>
 
-    const fileDrop = document.getElementById('fileDrop');
-    const docsInput = document.getElementById('docs');
-    const fileListDiv = document.getElementById('fileList');
-    const dynamicFieldsDiv = document.getElementById('dynamicFields');
-    const submitBtn = document.getElementById('submitBtn');
-    const statusDiv = document.getElementById('status');
-    const resultSection = document.getElementById('resultSection');
+    <script>
+        // Tab navigation
+        document.querySelectorAll('.category-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.category-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                // In a real implementation, we would show/hide different content sections here
+            });
+        });
+        
+        const SERVER_URL = ""; // Empty means use relative URL paths
+        let files = [];
+        let fileStates = [];
+        let requiredFieldsMap = {}; // { idx: [fields] }
 
-    // File drop logic
-    fileDrop.onclick = () => docsInput.click();
-    fileDrop.ondragover = e => { e.preventDefault(); fileDrop.classList.add('active'); };
-    fileDrop.ondragleave = e => { e.preventDefault(); fileDrop.classList.remove('active'); };
-    fileDrop.ondrop = e => {
-      e.preventDefault();
-      fileDrop.classList.remove('active');
-      handleFiles(e.dataTransfer.files);
-    };
-    fileDrop.onkeydown = e => {
-      if (e.key === 'Enter' || e.key === ' ') docsInput.click();
-    };
-    docsInput.onchange = e => handleFiles(e.target.files);
-
-    function getFileIcon(fileName) {
-      const ext = fileName.split('.').pop().toLowerCase();
-      if (["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp"].includes(ext)) {
-        return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#43d9ad"/><path d="M7 17l3-4 2 3 3-4 4 5H7z" fill="#fff"/></svg>`;
-      } else if (ext === "pdf") {
-        return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#eebbc3"/><text x="12" y="17" text-anchor="middle" font-size="10" fill="#232946">PDF</text></svg>`;
-      } else {
-        return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#b8c1ec"/><text x="12" y="17" text-anchor="middle" font-size="10" fill="#232946">DOC</text></svg>`;
-      }
-    }
-
-    function handleFiles(fileList) {
-      for (let file of fileList) {
-        if (!files.some(f => f.name === file.name && f.size === file.size)) {
-          files.push(file);
+        const fileDrop = document.getElementById('fileDrop');
+        const docsInput = document.getElementById('docs');
+        const fileListDiv = document.getElementById('fileList');
+        const dynamicFieldsDiv = document.getElementById('dynamicFields');
+        const submitBtn = document.getElementById('submitBtn');
+        const statusDiv = document.getElementById('status');
+        const resultSection = document.getElementById('resultSection');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const errorAlert = document.getElementById('errorAlert');
+        
+        // API Key validation
+        apiKeyInput.addEventListener('input', function() {
+            if (this.value.trim().length > 0) {
+                submitBtn.disabled = files.length === 0;
+            } else {
+                submitBtn.disabled = true;
+            }
+        });
+        
+        // File drop logic
+        fileDrop.onclick = () => docsInput.click();
+        fileDrop.ondragover = e => { e.preventDefault(); fileDrop.classList.add('active'); };
+        fileDrop.ondragleave = e => { e.preventDefault(); fileDrop.classList.remove('active'); };
+        fileDrop.ondrop = e => {
+            e.preventDefault();
+            fileDrop.classList.remove('active');
+            handleFiles(e.dataTransfer.files);
+        };
+        fileDrop.onkeydown = e => {
+            if (e.key === 'Enter' || e.key === ' ') docsInput.click();
+        };
+        docsInput.onchange = e => handleFiles(e.target.files);
+        
+        function getFileIcon(fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (["jpg", "jpeg", "png", "gif", "bmp", "tiff", "webp"].includes(ext)) {
+                return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#43d9ad"/><path d="M7 17l3-4 2 3 3-4 4 5H7z" fill="#fff"/></svg>`;
+            } else if (ext === "pdf") {
+                return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#eebbc3"/><text x="12" y="17" text-anchor="middle" font-size="10" fill="#232946">PDF</text></svg>`;
+            } else {
+                return `<svg width="24" height="24" fill="none"><rect x="3" y="3" width="18" height="18" rx="4" fill="#b8c1ec"/><text x="12" y="17" text-anchor="middle" font-size="10" fill="#232946">DOC</text></svg>`;
+            }
         }
-      }
-      fileStates = files.map(f => ({
-        file: f,
-        predictedType: '',
-        confirmedType: '',
-        requiredFields: [],
-        fields: {}
-      }));
-      renderFileList();
-      classifyAllFiles();
-    }
 
-    function renderFileList() {
-      fileListDiv.innerHTML = '';
-      files.forEach((file, idx) => {
-        fileListDiv.innerHTML += `
-          <div class="file-card">
-            <div class="file-card-icon">${getFileIcon(file.name)}</div>
-            <div class="file-card-content">
-              <h4>${file.name}</h4>
-              <div id="fileType${idx}">Classifying...</div>
-              <div id="typeSelectDiv${idx}" style="display:none;">
-                <label>Document Type:</label>
-                <select id="typeSelect${idx}">
-                  <option value="">Select type</option>
-                  <option value="Aadhar Card">Aadhar Card</option>
-                  <option value="PAN Card">PAN Card</option>
-                  <option value="Handicap smart card">Handicap smart card</option>
-                  <option value="Birth Certificate">Birth Certificate</option>
-                  <option value="Bonafide Certificate">Bonafide Certificate</option>
-                  <option value="Caste certificate">Caste certificate</option>
-                  <option value="Current Month Salary Slip">Current Month Salary Slip</option>
-                  <option value="Passport and VISA">Passport and VISA</option>
-                  <option value="Marksheet">Marksheet</option>
-                  <option value="Transgender Certificate">Transgender Certificate</option>
-                </select>
-                <button type="button" onclick="window.confirmType(${idx})">Confirm</button>
-              </div>
-              <div id="confirmedType${idx}" style="color:var(--success);display:none;"></div>
+        function handleFiles(fileList) {
+            for (let file of fileList) {
+                if (!files.some(f => f.name === file.name && f.size === file.size)) {
+                    files.push(file);
+                }
+            }
+            fileStates = files.map(f => ({
+                file: f,
+                predictedType: '',
+                confirmedType: '',
+                requiredFields: [],
+                fields: {}
+            }));
+            renderFileList();
+            classifyAllFiles();
+        }
+        
+        function renderFileList() {
+            fileListDiv.innerHTML = '';
+            files.forEach((file, idx) => {
+                fileListDiv.innerHTML += `
+                <div class="file-card">
+                    <div class="file-card-icon">${getFileIcon(file.name)}</div>
+                    <div class="file-card-content">
+                    <h4>${file.name}</h4>
+                    <div id="fileType${idx}">Classifying...</div>
+                    <div id="typeSelectDiv${idx}" style="display:none;">
+                        <label>Document Type:</label>
+                        <select id="typeSelect${idx}">
+                        <option value="">Select type</option>
+                        <option value="Aadhar Card">Aadhar Card</option>
+                        <option value="PAN Card">PAN Card</option>
+                        <option value="Handicap smart card">Handicap smart card</option>
+                        <option value="Birth Certificate">Birth Certificate</option>
+                        <option value="Bonafide Certificate">Bonafide Certificate</option>
+                        <option value="Caste certificate">Caste certificate</option>
+                        <option value="Current Month Salary Slip">Current Month Salary Slip</option>
+                        <option value="Passport and VISA">Passport and VISA</option>
+                        <option value="Marksheet">Marksheet</option>
+                        <option value="Transgender Certificate">Transgender Certificate</option>
+                        </select>
+                        <button type="button" onclick="window.confirmType(${idx})">Confirm</button>
+                    </div>
+                    <div id="confirmedType${idx}" style="color:var(--success);display:none;"></div>
+                    </div>
+                </div>
+                `;
+            });
+            submitBtn.disabled = !fileStates.every(f => f.confirmedType);
+        }
+
+        async function classifyAllFiles() {
+            for (let i = 0; i < fileStates.length; i++) {
+                const fd = new FormData();
+                fd.append('file', fileStates[i].file);
+                try {
+                    const res = await fetch(`${SERVER_URL}/classify_document`, { method: 'POST', body: fd });
+                    const data = await res.json();
+                    fileStates[i].predictedType = data.document_type || 'Unknown';
+                    document.getElementById(`fileType${i}`).innerHTML = `
+                        <b>Predicted:</b> ${fileStates[i].predictedType}
+                        <button type="button" onclick="window.acceptType(${i})">Accept</button>
+                        <button type="button" onclick="window.showTypeSelect(${i})">Change</button>
+                    `;
+                } catch (err) {
+                    document.getElementById(`fileType${i}`).innerHTML = `<span style="color:var(--error);">Error classifying</span>`;
+                }
+            }
+        }
+
+        window.acceptType = function(idx) {
+            fileStates[idx].confirmedType = fileStates[idx].predictedType;
+            document.getElementById(`confirmedType${idx}`).style.display = 'block';
+            document.getElementById(`confirmedType${idx}`).innerText = `Confirmed: ${fileStates[idx].confirmedType}`;
+            document.getElementById(`fileType${idx}`).style.display = 'none';
+            document.getElementById(`typeSelectDiv${idx}`).style.display = 'none';
+            fetchRequiredFields(idx, fileStates[idx].confirmedType);
+            submitBtn.disabled = !fileStates.every(f => f.confirmedType);
+        };
+        
+        window.showTypeSelect = function(idx) {
+            document.getElementById(`typeSelectDiv${idx}`).style.display = 'block';
+        };
+        
+        window.confirmType = function(idx) {
+            const sel = document.getElementById(`typeSelect${idx}`);
+            if (sel.value) {
+                fileStates[idx].confirmedType = sel.value;
+                document.getElementById(`confirmedType${idx}`).style.display = 'block';
+                document.getElementById(`confirmedType${idx}`).innerText = `Confirmed: ${fileStates[idx].confirmedType}`;
+                document.getElementById(`fileType${idx}`).style.display = 'none';
+                document.getElementById(`typeSelectDiv${idx}`).style.display = 'none';
+                fetchRequiredFields(idx, sel.value);
+                submitBtn.disabled = !fileStates.every(f => f.confirmedType);
+            }
+        };
+        
+        async function fetchRequiredFields(idx, docType) {
+            try {
+                const res = await fetch(`${SERVER_URL}/document_fields/${encodeURIComponent(docType)}`);
+                const data = await res.json();
+                if (data.fields && Array.isArray(data.fields)) {
+                    fileStates[idx].requiredFields = data.fields;
+                    renderDynamicFields();
+                }
+            } catch (err) {
+                // fallback: no fields
+                fileStates[idx].requiredFields = [];
+                renderDynamicFields();
+            }
+        }
+
+        function renderDynamicFields() {
+            dynamicFieldsDiv.innerHTML = '';
+            fileStates.forEach((f, idx) => {
+                if (!f.requiredFields || !f.confirmedType) return;
+                const section = document.createElement("div");
+                section.className = "dynamic-fields-section";
+                section.innerHTML = `<h4>${f.file.name} <span class="score-label">(${f.confirmedType})</span></h4>`;
+                f.requiredFields.forEach(field => {
+                    const inputId = `field_${idx}_${field}`;
+                    const label = document.createElement("label");
+                    label.setAttribute("for", inputId);
+                    label.innerText = field + ":";
+                    const input = document.createElement("input");
+                    input.type = "text";
+                    input.id = inputId;
+                    input.name = inputId;
+                    input.placeholder = `Enter ${field}`;
+                    section.appendChild(label);
+                    section.appendChild(input);
+                });
+                dynamicFieldsDiv.appendChild(section);
+            });
+            submitBtn.disabled = !fileStates.every(f => f.confirmedType);
+        }
+
+        function renderResults(data) {
+            resultSection.innerHTML = '';
+            if (!data.results) {
+                resultSection.innerHTML = `<div style="color:var(--error);">${data.error || 'Verification failed.'}</div>`;
+                return;
+            }
+            data.results.forEach(r => {
+                // Map YOLO Aadhar keys to field names for display
+                if (r.doc_type === "Aadhar Card") {
+                    const aadharMap = {
+                        "0": "aadhar_number",
+                        "1": "dob",
+                        "2": "gender",
+                        "3": "name",
+                        "4": "address"
+                    };
+                    if (r.fields) {
+                        const newFields = {};
+                        Object.entries(r.fields).forEach(([k, v]) => {
+                            newFields[aadharMap[k] || k] = v;
+                        });
+                        r.fields = newFields;
+                    }
+                    if (r.match_scores) {
+                        const newScores = {};
+                        Object.entries(r.match_scores).forEach(([k, v]) => {
+                            newScores[aadharMap[k] || k] = v;
+                        });
+                        r.match_scores = newScores;
+                    }
+                }
+                let html = `
+                    <div class="result-card">
+                        <div class="file-card-icon">${getFileIcon(r.filename)}</div>
+                        <div class="result-card-content">
+                            <h4>${r.filename}</h4>
+                            <div><b>Document Type:</b> ${r.doc_type} ${r.confidence !== null ? '(Confidence: ' + r.confidence + ')' : ''}</div>
+                            <div><b>Application Name:</b> ${r.user_name}</div>
+                            <div style="margin-top:10px;">
+                                ${r.match_scores ? Object.entries(r.match_scores).map(([field, score]) => `
+                                    <div>
+                                        <b>${field}:</b>
+                                        <span class="score-bar" style="width:${score}px;"></span>
+                                        <span class="score-label">${score !== undefined ? score + '%' : 'N/A'}</span>
+                                        <span class="${score >= 80 ? 'pass' : 'fail'}">
+                                            ${score >= 80 ? '&#10004;' : '&#10008;'}
+                                        </span>
+                                    </div>
+                                `).join('') : ''}
+                            </div>
+                            ${r.fields && Object.keys(r.fields).length > 0 ? `<details class="result-details"><summary>Show extracted fields</summary><pre class="result-pre">${Object.entries(r.fields).map(([k, v]) => k + ': ' + v).join('\n')}</pre></details>` : ''}
+                            <details class="result-details"><summary>Show raw OCR text</summary><pre class="result-pre">${r.raw_text}</pre></details>
+                            ${r.annotated_image ? `<details class="result-details"><summary>Show annotated image</summary><img src="data:image/jpeg;base64,${r.annotated_image}" style="max-width:100%;border-radius:4px;margin-top:10px;border:1px solid var(--border);" /></details>` : ''}
+                        </div>
+                    </div>
+                `;
+                resultSection.innerHTML += html;
+            });
+        }
+        
+        submitBtn.onclick = async function() {
+            try {
+                const apiKey = document.getElementById("apiKeyInput").value.trim();
+                const name = document.getElementById("applicantName").value.trim();
+                if (!apiKey || files.length === 0 || !name || !fileStates.every(f => f.confirmedType)) {
+                    showError("Please complete all fields and classification.");
+                    return;
+                }
+                submitBtn.disabled = true;
+                statusDiv.innerHTML = '<span class="loader"></span> Processing...';
+                resultSection.innerHTML = '';
+                const formData = new FormData();
+                formData.append("user_name", name);
+                for (let file of files) formData.append("files", file);
+                for (let f of fileStates) formData.append("confirmed_types", f.confirmedType);
+                fileStates.forEach((f, idx) => {
+                    if (f.requiredFields) {
+                        f.requiredFields.forEach(field => {
+                            const inputId = `field_${idx}_${field}`;
+                            const value = document.getElementById(inputId)?.value || '';
+                            formData.append(`fields_${idx}_${field}`, value);
+                        });
+                    }
+                });
+                const res = await fetch(`${SERVER_URL}/process_documents`, {
+                    method: "POST",
+                    headers: { "X-API-Key": apiKey },
+                    body: formData
+                });
+                const data = await res.json();
+                statusDiv.innerHTML = '';
+                submitBtn.disabled = false;
+                renderResults(data);
+            } catch (err) {
+                statusDiv.innerHTML = '';
+                submitBtn.disabled = false;
+                showError("Error processing documents: " + err.message);
+                console.error(err);
+            }
+        };
+        
+        function showError(message) {
+            console.error("Error:", message);
+            errorAlert.textContent = message;
+            errorAlert.style.display = 'block';
+            
+            // Add error to results area as well
+            resultSection.innerHTML = `<h2>Error</h2>
+                <div class="result-card" style="border-left: 4px solid var(--error);">
+                    <div class="file-card-icon" style="background-color: rgba(244, 63, 94, 0.2);">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 0C4.48 0 0 4.48 0 10C0 15.52 4.48 20 10 20C15.52 20 20 15.52 20 10C20 4.48 15.52 0 10 0ZM11 15H9V13H11V15ZM11 11H9V5H11V11Z" fill="#f43f5e"/>
+                        </svg>
+                    </div>
+                    <div class="result-card-content">
+                        <div class="file-name">Processing Error</div>
+                        <div class="file-status">${message}</div>
+                        <div style="margin-top: 10px; font-size: 14px; color: var(--text-secondary);">
+                            Please check if:
+                            <ul style="margin-top: 5px;">
+                                <li>Your API key is valid</li>
+                                <li>The server is running properly</li>
+                                <li>The files uploaded are valid documents</li>
+                                <li>The document models are accessible</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>`;
+        }
+    </script>
+    
+    <footer class="pmc-footer">
+        <div class="footer-container">
+            <div class="footer-section">
+                <h4>Important Links</h4>
+                <ul>
+                    <li><a href="#">RTI</a></li>
+                    <li><a href="#">Tenders</a></li>
+                    <li><a href="#">Careers</a></li>
+                    <li><a href="#">Downloads</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
             </div>
-          </div>
-        `;
-      });
-      submitBtn.disabled = !fileStates.every(f => f.confirmedType);
-    }
-
-    async function classifyAllFiles() {
-      for (let i = 0; i < fileStates.length; i++) {
-        const fd = new FormData();
-        fd.append('file', fileStates[i].file);
-        try {
-          const res = await fetch(`${LAN_SERVER}/classify_document`, { method: 'POST', body: fd });
-          const data = await res.json();
-          fileStates[i].predictedType = data.document_type || 'Unknown';
-          document.getElementById(`fileType${i}`).innerHTML = `
-            <b>Predicted:</b> ${fileStates[i].predictedType}
-            <button type="button" onclick="window.acceptType(${i})">Accept</button>
-            <button type="button" onclick="window.showTypeSelect(${i})">Change</button>
-          `;
-        } catch (err) {
-          document.getElementById(`fileType${i}`).innerHTML = `<span style="color:var(--error);">Error classifying</span>`;
-        }
-      }
-    }
-
-    window.acceptType = function(idx) {
-      fileStates[idx].confirmedType = fileStates[idx].predictedType;
-      document.getElementById(`confirmedType${idx}`).style.display = 'block';
-      document.getElementById(`confirmedType${idx}`).innerText = `Confirmed: ${fileStates[idx].confirmedType}`;
-      document.getElementById(`fileType${idx}`).style.display = 'none';
-      document.getElementById(`typeSelectDiv${idx}`).style.display = 'none';
-      fetchRequiredFields(idx, fileStates[idx].confirmedType);
-      submitBtn.disabled = !fileStates.every(f => f.confirmedType);
-    };
-    window.showTypeSelect = function(idx) {
-      document.getElementById(`typeSelectDiv${idx}`).style.display = 'block';
-    };
-    window.confirmType = function(idx) {
-      const sel = document.getElementById(`typeSelect${idx}`);
-      if (sel.value) {
-        fileStates[idx].confirmedType = sel.value;
-        document.getElementById(`confirmedType${idx}`).style.display = 'block';
-        document.getElementById(`confirmedType${idx}`).innerText = `Confirmed: ${fileStates[idx].confirmedType}`;
-        document.getElementById(`fileType${idx}`).style.display = 'none';
-        document.getElementById(`typeSelectDiv${idx}`).style.display = 'none';
-        fetchRequiredFields(idx, sel.value);
-        submitBtn.disabled = !fileStates.every(f => f.confirmedType);
-      }
-    };
-
-    async function fetchRequiredFields(idx, docType) {
-      try {
-        const res = await fetch(`${LAN_SERVER}/document_fields/${encodeURIComponent(docType)}`);
-        const data = await res.json();
-        if (data.fields && Array.isArray(data.fields)) {
-          fileStates[idx].requiredFields = data.fields;
-          renderDynamicFields();
-        }
-      } catch (err) {
-        // fallback: no fields
-        fileStates[idx].requiredFields = [];
-        renderDynamicFields();
-      }
-    }
-
-    function renderDynamicFields() {
-      dynamicFieldsDiv.innerHTML = '';
-      fileStates.forEach((f, idx) => {
-        if (!f.requiredFields || !f.confirmedType) return;
-        const section = document.createElement("div");
-        section.className = "dynamic-fields-section";
-        section.innerHTML = `<h4>${f.file.name} <span class="score-label">(${f.confirmedType})</span></h4>`;
-        f.requiredFields.forEach(field => {
-          const inputId = `field_${idx}_${field}`;
-          const label = document.createElement("label");
-          label.setAttribute("for", inputId);
-          label.innerText = field + ":";
-          const input = document.createElement("input");
-          input.type = "text";
-          input.id = inputId;
-          input.name = inputId;
-          input.placeholder = `Enter ${field}`;
-          section.appendChild(label);
-          section.appendChild(input);
-        });
-        dynamicFieldsDiv.appendChild(section);
-      });
-      submitBtn.disabled = !fileStates.every(f => f.confirmedType);
-    }
-
-    submitBtn.onclick = async function() {
-      try {
-        const apiKey = document.getElementById("apiKeyInput").value.trim();
-        const name = document.getElementById("applicantName").value.trim();
-        if (!apiKey || files.length === 0 || !name || !fileStates.every(f => f.confirmedType)) {
-          alert("Please complete all fields and classification.");
-          return;
-        }
-        submitBtn.disabled = true;
-        statusDiv.innerHTML = '<span class="loader"></span> Processing...';
-        resultSection.innerHTML = '';
-        const formData = new FormData();
-        formData.append("user_name", name);
-        for (let file of files) formData.append("files", file);
-        for (let f of fileStates) formData.append("confirmed_types", f.confirmedType);
-        fileStates.forEach((f, idx) => {
-          if (f.requiredFields) {
-            f.requiredFields.forEach(field => {
-              const inputId = `field_${idx}_${field}`;
-              const value = document.getElementById(inputId)?.value || '';
-              formData.append(`fields_${idx}_${field}`, value);
-            });
-          }
-        });
-        const res = await fetch(`${LAN_SERVER}/process_documents`, {
-          method: "POST",
-          headers: { "X-API-Key": apiKey },
-          body: formData
-        });
-        const data = await res.json();
-        statusDiv.innerHTML = '';
-        submitBtn.disabled = false;
-        renderResults(data);
-      } catch (err) {
-        statusDiv.innerHTML = '';
-        submitBtn.disabled = false;
-        alert("Error processing documents. See console.");
-      }
-    };
-
-    function renderResults(data) {
-      resultSection.innerHTML = '';
-      if (!data.results) {
-        resultSection.innerHTML = `<div style="color:var(--error);">${data.error || 'Verification failed.'}</div>`;
-        return;
-      }
-      data.results.forEach(r => {
-        // Map YOLO Aadhar keys to field names for display
-        if (r.doc_type === "Aadhar Card") {
-          const aadharMap = {
-            "0": "aadhar_number",
-            "1": "dob",
-            "2": "gender",
-            "3": "name",
-            "4": "address"
-          };
-          if (r.fields) {
-            const newFields = {};
-            Object.entries(r.fields).forEach(([k, v]) => {
-              newFields[aadharMap[k] || k] = v;
-            });
-            r.fields = newFields;
-          }
-          if (r.match_scores) {
-            const newScores = {};
-            Object.entries(r.match_scores).forEach(([k, v]) => {
-              newScores[aadharMap[k] || k] = v;
-            });
-            r.match_scores = newScores;
-          }
-        }
-        let html = `
-          <div class="result-card">
-            <div class="file-card-icon">${getFileIcon(r.filename)}</div>
-            <div class="result-card-content">
-              <h4>${r.filename}</h4>
-              <div><b>Document Type:</b> ${r.doc_type} ${r.confidence !== null ? '(Confidence: ' + r.confidence + ')' : ''}</div>
-              <div><b>Application Name:</b> ${r.user_name}</div>
-              <div style="margin-top:10px;">
-                ${r.match_scores ? Object.entries(r.match_scores).map(([field, score]) => `
-                  <div>
-                    <b>${field}:</b>
-                    <span class="score-bar" style="width:${score}px;background:linear-gradient(90deg,#43d9ad 0%,#b8c1ec 100%);"></span>
-                    <span class="score-label">${score !== undefined ? score + '%' : 'N/A'}</span>
-                    <span class="${score >= 80 ? 'pass' : 'fail'}">
-                      ${score >= 80 ? '&#10004;' : '&#10008;'}
-                    </span>
-                  </div>
-                `).join('') : ''}
-              </div>
-              ${r.fields && Object.keys(r.fields).length > 0 ? `<details><summary>Show extracted fields</summary><pre>${Object.entries(r.fields).map(([k, v]) => k + ': ' + v).join('\n')}</pre></details>` : ''}
-              <details><summary>Show raw OCR text</summary><pre>${r.raw_text}</pre></details>
-              ${r.annotated_image ? `<details><summary>Show annotated image</summary><img src="data:image/jpeg;base64,${r.annotated_image}" style="max-width:100%;border-radius:8px;margin-top:10px;" /></details>` : ''}
+            <div class="footer-section">
+                <h4>Contact Information</h4>
+                <p>Document Verification Department</p>
+                <p>Pune Municipal Corporation</p>
+                <p>Email: documents@pmc.gov.in</p>
+                <p>Phone: +91 020-25501000</p>
+                <p>Toll Free: 18001030222</p>
             </div>
-          </div>
-        `;
-        resultSection.innerHTML += html;
-      });
-    }
-  </script>
+            <div class="footer-section">
+                <h4>Connect With Us</h4>
+                <div class="footer-social-icons">
+                    <a href="#" class="footer-social-icon">f</a>
+                    <a href="#" class="footer-social-icon">in</a>
+                    <a href="#" class="footer-social-icon">X</a>
+                    <a href="#" class="footer-social-icon">YT</a>
+                    <a href="#" class="footer-social-icon">W</a>
+                </div>
+                <p style="margin-top: 15px;">Last Updated: July 20, 2025</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Pune Municipal Corporation. All Rights Reserved.</p>
+        </div>
+    </footer>
 </body>
 </html>
